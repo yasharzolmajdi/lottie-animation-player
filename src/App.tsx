@@ -15,7 +15,7 @@ function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [animationData, setAnimationData] = useState<any>();
   const [instance, setInstance] = useState<AnimationItem>();
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(1);
   const [rangeValue, setRangeValue] = useState(0);
 
   const createLottie = useCallback(
@@ -91,15 +91,6 @@ function App() {
       instance.resetSegments(true);
       instance.goToAndStop(value, true);
 
-      // const secondMaker = markers[1];
-      // const newValue =
-      //   Math.round((value / secondMaker.tm) * (markers.length / 2 - 2)) + 1;
-      // instance.playSegments(
-      //   [markers[newValue * 2].tm, markers[newValue * 2 + 1].tm],
-      //   true
-      // );
-
-      // setValue(newValue);
       setRangeValue(value);
     },
     [instance, animationData?.markers]
@@ -157,7 +148,7 @@ function App() {
           />
         </div>
         <div className="w-full flex flex-col space-y-2 col-span-3 border rounded-md shadow-md bg-gray-50 p-4">
-          <div>Markers: {(animationData?.markers || []).length / 2}</div>
+          <div>Markers: {(animationData?.markers || []).length / 2 - 1}</div>
           <div>FPS: {animationData?.fr}</div>
           <div>Frames: {animationData?.op}</div>
           <div>
