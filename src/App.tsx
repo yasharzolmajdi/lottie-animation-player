@@ -1,7 +1,9 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import lottie, { AnimationItem } from "lottie-web";
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
+
+import animationSlider from "./animation-slider.json";
 
 const DEFAULT_RENDERER_SETTINGS = {
   clearCanvas: false,
@@ -54,6 +56,11 @@ function App() {
     },
     [instance]
   );
+
+  useEffect(() => {
+    createLottie(animationSlider);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onFileChange = useCallback(
     (event) => {
@@ -132,7 +139,7 @@ function App() {
 
     sliderMaker = {
       ...sliderMaker,
-      [Math.round((i / length) * animationData.markers[1].tm)]: "test",
+      [Math.round((i / length) * animationData.markers[1].tm)]: "",
     };
   }
 
