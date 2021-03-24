@@ -1,5 +1,7 @@
-import React, { ChangeEvent, useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import lottie, { AnimationItem } from "lottie-web";
+import Slider from "rc-slider";
+import "rc-slider/assets/index.css";
 
 const DEFAULT_RENDERER_SETTINGS = {
   clearCanvas: false,
@@ -12,9 +14,11 @@ function App() {
   const [animationData, setAnimationData] = useState<any>();
   const [instance, setInstance] = useState<AnimationItem>();
   const [value, setValue] = useState(0);
+  const [rangeValue, setRangeValue] = useState(0);
 
   const createLottie = useCallback(
     (animation: any) => {
+      const slider = document.getElementById("slider");
       if (instance) {
         instance.destroy();
       }
@@ -31,10 +35,22 @@ function App() {
       setInstance(newInstance);
 
       const markers = animation.markers || [];
-      newInstance.playSegments(
-        [markers[0 * 2].tm, markers[0 * 2 + 1].tm],
-        true
-      );
+      if (markers.length === 0) {
+        slider?.setAttribute("max", animation.op);
+        return;
+      }
+
+      if (markers.legnth < 3) {
+        throw new Error("animation needs to have 4 makers or no markers");
+      }
+
+      const firstMaker = markers[0];
+      const secondMaker = markers[1];
+
+      slider?.setAttribute("min", firstMaker.tm);
+      slider?.setAttribute("max", secondMaker.tm);
+
+      newInstance.playSegments([markers[2].tm, markers[3].tm], true);
     },
     [instance]
   );
@@ -56,68 +72,107 @@ function App() {
   );
 
   const onRangeChange = React.useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
+    (value: number) => {
       if (!instance) {
         return;
       }
-
-      const newValue = parseInt(e.target.value, 10);
-
       const markers = animationData.markers || [];
+      if (markers.legnth === 0) {
+        return;
+      }
+
+      instance.resetSegments(true);
+      instance.goToAndStop(value, true);
+
+      // const secondMaker = markers[1];
+      // const newValue =
+      //   Math.round((value / secondMaker.tm) * (markers.length / 2 - 2)) + 1;
+      // instance.playSegments(
+      //   [markers[newValue * 2].tm, markers[newValue * 2 + 1].tm],
+      //   true
+      // );
+
+      // setValue(newValue);
+      setRangeValue(value);
+    },
+    [instance, animationData?.markers]
+  );
+
+  const handleAfterChange = React.useCallback(
+    (value: number) => {
+      if (!instance) {
+        return;
+      }
+      const markers = animationData.markers || [];
+      if (markers.legnth === 0) {
+        return;
+      }
+
+      const secondMaker = markers[1];
+      const newValue =
+        Math.round((value / secondMaker.tm) * (markers.length / 2 - 2)) + 1;
       instance.playSegments(
         [markers[newValue * 2].tm, markers[newValue * 2 + 1].tm],
         true
       );
 
-      setValue(parseInt(e.target.value, 10));
+      setValue(newValue);
+      const length = animationData.markers.length / 2 - 2;
+      const newRangeValue =
+        ((newValue - 1) / length) * animationData.markers[1].tm;
+      setRangeValue(newRangeValue);
     },
     [instance, animationData?.markers]
   );
+
+  let sliderMaker: Record<number, string> = {};
+
+  for (let i = 0; i < animationData?.markers.length / 2 - 1; i += 1) {
+    const length = animationData.markers.length / 2 - 2;
+
+    sliderMaker = {
+      ...sliderMaker,
+      [Math.round((i / length) * animationData.markers[1].tm)]: "test",
+    };
+  }
 
   return (
     <div className="w-full container mx-auto pt-10 space-y-4 max-w-3xl">
       <div className="w-full p-4 border rounded-md shadow-md bg-gray-50">
         <input type="file" onChange={onFileChange} />
       </div>
-      <div className="w-full p-4 border rounded-md shadow-md bg-gray-50">
-        <div id={"lottie"} ref={containerRef} className="w-full h-full" />
-      </div>
-      <div className="w-full grid grid-cols-4 gap-4">
-        <div className="px-4 py-2 border rounded-md shadow-md bg-gray-50">
-          Markers: {(animationData?.markers || []).length / 2}
+      <div className="w-full grid grid-cols-12 gap-4">
+        <div className="w-full p-4 border rounded-md shadow-md bg-gray-50 col-span-9">
+          <div
+            id={"lottie"}
+            ref={containerRef}
+            className="w-full h-full max-w-lg mx-auto"
+          />
         </div>
-        <div className="px-4 py-2 border rounded-md shadow-md bg-gray-50">
-          FPS: {animationData?.fr}
-        </div>
-        <div className="px-4 py-2 border rounded-md shadow-md bg-gray-50">
-          Frames: {animationData?.op}
-        </div>
-        <div className="px-4 py-2 border rounded-md shadow-md bg-gray-50">
-          W/H: {animationData?.w}/{animationData?.h}
-        </div>
-      </div>
-      <div className="w-full grid grid-cols-4 gap-4">
-        <div className="px-4 py-2 border rounded-md shadow-md bg-gray-50">
-          Current Marker: {value}
-        </div>
-        <div className="px-4 py-2 border rounded-md shadow-md bg-gray-50">
-          M. Frames:{" "}
-          {animationData?.markers[value * 2 + 1].tm -
-            animationData?.markers[value * 2].tm}
-        </div>
-        <div className="px-4 py-2 border rounded-md shadow-md bg-gray-50">
-          M. F. Start: {animationData?.markers[value * 2].tm}
-        </div>
-        <div className="px-4 py-2 border rounded-md shadow-md bg-gray-50">
-          M. F. End: {animationData?.markers[value * 2 + 1].tm}
+        <div className="w-full flex flex-col space-y-2 col-span-3 border rounded-md shadow-md bg-gray-50 p-4">
+          <div>Markers: {(animationData?.markers || []).length / 2}</div>
+          <div>FPS: {animationData?.fr}</div>
+          <div>Frames: {animationData?.op}</div>
+          <div>
+            W/H: {animationData?.w}/{animationData?.h}
+          </div>
+          <div>Current Marker: {value}</div>
+          <div>
+            M. Frames:{" "}
+            {animationData?.markers[value * 2 + 1].tm -
+              animationData?.markers[value * 2].tm}
+          </div>
+          <div>M. F. Start: {animationData?.markers[value * 2].tm}</div>
+          <div>M. F. End: {animationData?.markers[value * 2 + 1].tm}</div>
         </div>
       </div>
       <div className="w-full p-4 border rounded-md shadow-md bg-gray-50 flex flex-col space-y-4">
-        <input
-          type="range"
-          min="0"
-          max={(animationData?.markers?.length / 2 || 1) - 1}
+        <Slider
+          marks={sliderMaker}
+          max={animationData?.markers ? animationData.markers[1].tm : 0}
           onChange={onRangeChange}
+          onAfterChange={handleAfterChange}
+          value={rangeValue}
           className="w-full"
         />
       </div>
